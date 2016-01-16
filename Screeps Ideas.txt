@@ -1,0 +1,124 @@
+Concepts:
+
+Whitelist: list of people who are considered allies, and are not to be attacked by offensive creeps. Defensive creeps will consider them hostile, to prevent exploitation of the system.
+	Whitelisted people: malloc0,
+
+	Progress: not yet begun
+
+Battling: Check every so often (10 ticks? 20 ticks? 1 minute? 30 seconds?) to see if creeps not owned by players on the whitelist are in the room. Battling is True if there are creeps that meet this criteria, else it's false.
+
+	Progress: not yet begun
+
+Respawn Queue: A list of creeps who are dead. 
+
+	Progress: (malloc0 is working on it)
+
+Auto-Respawn: Automatically respawn creeps, with this set of priorities:
+
+Always: Go through the entries in a "first in, first out" style, after other priorites are considered
+
+When Battling is False:
+1. Miner
+2. FortRepair
+3. RoadRepair
+4. Controller
+5. Everything else
+
+When Battling is True:
+
+1. Miner
+2. Guard
+3. FortRepair
+4. FortHeal
+5. Turret
+6. Defender
+7. Everything else
+
+Creeps:
+
+Miner: 
+Base: goes to sources, gets energy, them takes it to:
+1. nearest not full storage
+2. if no storages, nearest not full spawn
+3. if no not full spawns, nearest not full extension
+4. if no not full extensions, nearest spawn, then wait till room is available
+
+	Progress:
+	Base: done
+	1: not yet begun
+	2: partially done
+	3: WIP
+	4: partially done
+
+Maker:
+Base: Gets energy from the spawn (set which spawn manually), then uses it to construct the nearest construction site.
+
+	Progress:
+	Base: done
+
+Defender:
+Base: seeks out hostile enemies (Source keepers are ignored if Battling is True) and destroys them with melee attacks.
+
+	Progress:
+	Base: done
+	Targeting: not yet begun
+
+Controller (maintainence):
+Base: Gets energy from spawn (set which spawn manually), then uses it to upgrade the Room Controller.
+
+	Progress:
+	Base: done
+
+RoadRepair (maintainence):
+Base: gets energy from spawn (set which spawn manually), then uses it to repair damaged roads.
+
+	Progress:
+	Base: partially done
+
+FortRepair (fort):
+Base: gets energy from spawn (set which spawn manually), then uses it to repair:
+
+F: When Battling is False:
+F1. Ramparts below 5/6*max hits
+F2. Walls
+F3. Towers
+F4. Everything not listed besides Ramparts above 5/6*max hits, and roads
+F5. Ramparts above 5/6*max hits
+
+T: When Battling is True:
+T1. Ramparts below 5/6*max hits
+T2. Walls
+T3. Ramparts above 5/6*max hits
+
+	Progress:
+	Base: partially done
+	F: not yet begun
+	T: not yet begun
+
+Turret (fort):
+Base: stays at the beacon with its name at all times, and rangedAttacks enemy creeps.
+
+	Progress:
+	Base: not yet begun
+
+Guard (fort): stays at the beacon with its name at all times, and attacks enemy creeps.
+
+	Progress:
+	Base: partially done
+
+FortHeal (fort):
+Base: stays at the beacon with its name at all times, and rangedHeals other creeps, following this priority:
+
+1. 
+
+
+
+
+
+
+
+
+
+
+
+
