@@ -69,7 +69,7 @@ Base: Gets energy from spawn (set which spawn manually), then uses it to upgrade
 	Progress:
 	Base: done
 
-RoadRepair (maintainence):
+roadman (maintainence):
 Base: gets energy from spawn (set which spawn manually), then uses it to repair damaged roads.
 
 	Progress:
@@ -109,8 +109,14 @@ Guard (fort): stays at the beacon with its name at all times, and attacks enemy 
 FortHeal (fort):
 Base: stays at the beacon with its name at all times, and rangedHeals other creeps, following this priority:
 
-1. 
+1.
 
+Demo:
+Base: Finds enemy structures and destroys them. DOES NOT WORK ON ROADS. (Walls & Ramparts WIP)
+
+	Progress:
+	Base: done
+	Walls & Ramparts: not yet started
 
 
 
