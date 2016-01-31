@@ -11,7 +11,7 @@ Battling: Check every so often (10 ticks? 20 ticks? 1 minute? 30 seconds?) to se
 
 Respawn Queue: A list of creeps who are dead. 
 
-	Progress: (malloc0 is working on it)
+	Progress: Done
 
 Auto-Respawn: Automatically respawn creeps, with this set of priorities:
 
@@ -41,14 +41,12 @@ Base: goes to sources, gets energy, them takes it to:
 1. nearest not full storage
 2. if no storages, nearest not full spawn
 3. if no not full spawns, nearest not full extension
-4. if no not full extensions, nearest spawn, then wait till room is available
 
 	Progress:
 	Base: done
 	1: not yet begun
-	2: partially done
-	3: WIP
-	4: partially done
+	2: done
+	3: done
 
 Maker:
 Base: Gets energy from the spawn (set which spawn manually), then uses it to construct the nearest construction site.
