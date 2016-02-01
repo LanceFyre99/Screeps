@@ -38,11 +38,12 @@ module.exports.loop = function () {
 		if (role == 'makerrefill') {
 			countAs = 'maker';
 		}
-		
-		if (role == 'controlrefill') {
+		else if (role == 'controlrefill') {
 			countAs = 'control';
 		}
-		
+		else if (role == 'ext') {
+		    countAs = 'miner';
+		}
 		else {
 			countAs = role;
 		}
@@ -94,15 +95,19 @@ module.exports.loop = function () {
 			
 				}
 			});
-			if(creep.carry.energy !== 0)
+			
+			if(creep.carry.energy !== 0) {
 				if(creep.transfer(closestEmpty, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 					creep.moveTo(closestEmpty);
 				}
-				if(creep.transfer(closestEmpty, RESOURCE_ENERGY) == ERR_FULL) {
-					creep.memory = 'miner';
-				}
-			else{
+			}	
+				
+			if(closestEmpty === null) {
 				creep.memory = 'miner';
+			}
+			
+			if(creep.carry.energy === 0) {
+			    creep.memory = 'miner';
 			}
 		}
 		
