@@ -1,13 +1,17 @@
 /* jshint -W083 */
 
 var harvester = require('harvester');
+var Turret = require('Turret');
 
 var body = {
-	'miner': [WORK, CARRY, MOVE],
+	'miner': [WORK, WORK, CARRY, MOVE, MOVE],
 	'maker': [WORK, CARRY, MOVE],
-	'control': [WORK, CARRY, MOVE],
-	'guard': [ATTACK, ATTACK, MOVE, MOVE],
+	'control': [WORK, CARRY, CARRY, MOVE, MOVE],
+	'guard': [ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE],
+	'scavenger': [CARRY, CARRY, MOVE, MOVE],
 };
+
+var construct = Game.spawns.Spawn1.room.find(FIND_CONSTRUCTION_SITES);
 
 function makeName(role) {
 	var creeps = Game.creeps;
@@ -44,30 +48,15 @@ module.exports.loop = function () {
 		else if (role == 'ext') {
 		    countAs = 'miner';
 		}
+		else if (role == 'tow') {
+		    countAs = 'miner';
+		} 
 		else {
 			countAs = role;
 		}
 		
 		if (countAs in pop)
 			pop[countAs] += 1;
-
-        var roads = creep.pos.findClosestByRange(FIND_MY_STRUCTURES,{
-			filter: function(object) {
-				//console.log(object);
-				if(object.structureType != STRUCTURE_ROAD) {
-					//console.log("filtering non-road");
-					return false;
-				}
-				if(object.hits == object.hitsMax) {
-					//console.log("filtering non-damaged")
-					return false;
-				}
-				else{    
-					//console.log("found damaged roadroad");
-					return true;
-				}
-			}
-		});
                     
     	if(creep.memory == 'miner') {
 			harvester(creep);
@@ -103,6 +92,44 @@ module.exports.loop = function () {
 			}	
 				
 			if(closestEmpty === null) {
+				creep.memory = 'tow';
+			}
+			
+			if(creep.carry.energy === 0) {
+			    creep.memory = 'miner';
+			}
+		}
+		
+		if(creep.memory == 'tow') {
+			var Tower = creep.pos.findClosestByRange(FIND_MY_STRUCTURES,{
+				filter: function(object) {
+				//console.log(object);
+				
+					if(object.structureType != STRUCTURE_TOWER) {
+					//console.log("filtering non-extention");
+					return false;
+					}
+					
+					if(object.energy == object.energyCapacity) {
+						//console.log("filtering filled");
+						return false;
+					}
+					
+					else{    
+						//console.log("found empty");
+						return true;
+					}
+			
+				}
+			});
+			
+			if(creep.carry.energy !== 0) {
+				if(creep.transfer(Tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+					creep.moveTo(Tower);
+				}
+			}	
+				
+			if(Tower === null) {
 				creep.memory = 'miner';
 			}
 			
@@ -165,7 +192,20 @@ module.exports.loop = function () {
                 }
             }
         }
-        
+		
+		if(creep.memory == 'scavenger') {
+			if(creep.carry.energy < creep.carryCapacity) {
+				var dropped = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES);
+				if(creep.pickup(dropped) == ERR_NOT_IN_RANGE) {
+					creep.moveTo(dropped);
+				}
+			}
+			else{
+				if(creep.transfer(Game.spawns.Spawn1, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+					creep.moveTo(Game.spawns.Spawn1);
+				}
+			}
+		}
         if(creep.memory == 'makerrefill') {
             if(creep.carry.energy < creep.carryCapacity) {
 				if(Game.spawns.Spawn1.energy >= 250) {
@@ -197,17 +237,24 @@ module.exports.loop = function () {
 	
 	var spawn = Game.spawns.Spawn1;
 	
-	if (pop.miner < 5) {
+	if (pop.miner < 3) {
 		if (spawn.canCreateCreep(body.miner) === 0) {
 			spawn.createCreep(body.miner, makeName('miner'), 'miner');
 			return;
 		}
 	}
-	if (pop.control < 3) {
+	if (pop.control < 2) {
 		if (spawn.canCreateCreep(body.control) === 0) {
 			spawn.createCreep(body.control, makeName('control'), 'control');
 			return;
 		}
-	}		
-	// Lucas: write more spawn rules ..
+	}
+	if(construct !== null) {
+		if (pop.maker < 1) {
+			if (spawn.canCreateCreep(body.maker) === 0) {
+				spawn.createCreep(body.maker, makeName('maker'), 'maker');
+			}
+		}
+	}
+	Turret.run();
 };
