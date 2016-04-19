@@ -4,14 +4,16 @@ var harvester = require('harvester');
 var Turret = require('Turret');
 var Portm = require('Portm');
 var Carry = require('Carry');
+var Links = require('Links');
 
 var body = {
-	'miner': [WORK, WORK, CARRY, MOVE],
-	'maker': [WORK, CARRY, CARRY, MOVE, MOVE, MOVE],
-	'control': [WORK, CARRY, CARRY, MOVE, MOVE],
-	'guard': [ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE],
+	'miner': [WORK, WORK, WORK, WORK, WORK, MOVE],
+	'maker': [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE],
+	'control': [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE],
+	'guard': [TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE],
 	'scavenger': [CARRY, CARRY, MOVE, MOVE],
-	'Carry': [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
+	'Carry': [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE],
+	'refiller': [CARRY, CARRY, MOVE],
 };
 
 function makeName(role) {
@@ -26,6 +28,8 @@ function makeName(role) {
 }
 
 module.exports.loop = function () {	
+	
+	
 	var construct = Game.spawns.Spawn1.room.find(FIND_CONSTRUCTION_SITES);
 	
 	var pop = {
@@ -34,147 +38,62 @@ module.exports.loop = function () {
 		'control': 0,
 		'guard': 0,
 		'Carry': 0,
+		'refiller': 0,
+		'remaker': 0,
 	};
 	
     for(var name in Game.creeps) {
         var unit = Game.creeps[name];
 		
-		var role = unit.memory.role;
-		
 		var countAs;
 		
-		if (role == 'makerrefill') {
+		if (unit.memory.role == 'makerrefill') {
 			countAs = 'maker';
 		}
-		else if (role == 'controlrefill') {
+		else if (unit.memory.role == 'controlrefill') {
 			countAs = 'control';
 		}
-		else if (role == 'ext') {
-		    countAs = 'miner';
-		}
-		else if (role == 'tow') {
-		    countAs = 'miner';
-		}
-		else if (role == 'stor') {
+		else if (unit.memory.role == 'portm') {
 			countAs = 'miner';
 		}
-		else if (role == 'portm') {
-			countAs = 'miner';
+		else if (unit.memory.role == 'dismantle') {
+			countAs = 'remaker';
 		}
 		else {
-			countAs = role;
+			countAs = unit.memory.role;
 		}
 		
 		if (countAs in pop)
 			pop[countAs] += 1;
                     
-    	if(role == 'miner') {
+    	if(unit.memory.role == 'miner') {
 			harvester(unit);
 		}
 		
-		if(role == 'portm') {
+		if(unit.memory.role == 'portm') {
 			Portm.deliver(unit);
 		}
 		
-		if(role == 'Carry') {
+		if(unit.memory.role == 'Carry') {
 			Carry.run(unit);
 		}
 		
-		if (role == 'ext') {
-			var closestEmpty = unit.pos.findClosestByRange(FIND_MY_STRUCTURES,{
-				filter: function(object) {
-				//console.log(object);
-				
-					if(object.structureType != STRUCTURE_EXTENSION) {
-					//console.log("filtering non-extention");
-					return false;
-					}
-					
-					if(object.energy == object.energyCapacity) {
-						//console.log("filtering filled");
-						return false;
-					}
-					
-					else{    
-						//console.log("found empty");
-						return true;
-					}
-			
-				}
-			});
-			
-			if(unit.carry.energy !== 0) {
-				if(unit.transfer(closestEmpty, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-					unit.moveTo(closestEmpty);
-				}
-			}	
-				
-			if(closestEmpty === null) {
-				role = 'tow';
+        if(unit.memory.role == 'control') {
+            if(unit.carry.energy === 0) {
+				unit.memory.role = 'controlrefill';
 			}
-			
-			if(unit.carry.energy === 0) {
-			    role = 'miner';
-			}
-		}
+            else {
+                if(unit.room.controller) {
+                    if(unit.upgradeController(unit.room.controller) == ERR_NOT_IN_RANGE) {
+                        unit.moveTo(unit.room.controller, {reusePath: 30});
+                    }   
+                }
+            }
+        }
 		
-		if(role == 'tow') {
-			var Tower = unit.pos.findClosestByRange(FIND_MY_STRUCTURES,{
-				filter: function(object) {
-				//console.log(object);
-				
-					if(object.structureType != STRUCTURE_TOWER) {
-					//console.log("filtering non-extention");
-					return false;
-					}
-					
-					if(object.energy == object.energyCapacity) {
-						//console.log("filtering filled");
-						return false;
-					}
-					
-					else{    
-						console.log("found empty");
-						return true;
-					}
-			
-				}
-			});
-			
-			if(unit.carry.energy !== 0) {
-				if(unit.transfer(Tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-					unit.moveTo(Tower);
-				}
-			}	
-				
-			if(Tower === null) {
-				role = 'stor';
-			}
-			
-			if(unit.carry.energy === 0) {
-			    role = 'miner';
-			}
-		}
-		
-		if(role == 'stor') {
-			
-			
-			if(unit.carry.energy !== 0) {
-				if(unit.transfer(Storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-					unit.moveTo(Storage);
-				}
-			}	
-			if(Storage === null) {
-				role = 'miner';
-			}
-			if(unit.carry.energy === 0) {
-				role = 'miner';
-			}
-		}
-		
-		if(role == 'maker') {
+		if(unit.memory.role == 'maker') {
 		    if(unit.carry.energy === 0) {
-				role = 'makerrefill';
+				unit.memory.role = 'makerrefill';
 			}
 			else {
 				var target = unit.pos.findClosestByRange(FIND_CONSTRUCTION_SITES);
@@ -184,20 +103,38 @@ module.exports.loop = function () {
 			}
 		}
 		
-        if(role == 'control') {
-            if(unit.carry.energy === 0) {
-				role = 'controlrefill';
+		if(unit.memory.role == 'dismantle') {
+			//console.log('Out of power');
+			if(unit.carry.energy < unit.carryCapacity) {
+				//console.log('IM GONNA WRECK IT');
+				var old = Game.flags.Q.pos.findClosestByRange(FIND_STRUCTURES, {
+					filter: function(q) {
+						return q.structureType == STRUCTURE_WALL;
+					}
+				});
+				if(unit.dismantle(old) == ERR_NOT_IN_RANGE) {
+					unit.moveTo(old);
+				}
 			}
-            else {
-                if(unit.room.controller) {
-                    if(unit.upgradeController(unit.room.controller) == ERR_NOT_IN_RANGE) {
-                        unit.moveTo(unit.room.controller);
-                    }   
-                }
-            }
-        }
+			else {
+				unit.memory.role = 'remaker';
+			}
+		}
 		
-        if(role == 'guard') {
+		if(unit.memory.role == 'remaker') {
+			//console.log('Recycling is good!');
+			if(unit.carry.energy === 0) {
+				unit.memory.role = 'dismantle';
+			}
+			else {
+				var New = unit.pos.findClosestByRange(FIND_CONSTRUCTION_SITES);
+				if(unit.build(New) == ERR_NOT_IN_RANGE) {
+					unit.moveTo(New);
+				}
+			}
+		}
+
+        if(unit.memory.role == 'guard') {
             var targets = unit.room.find(FIND_HOSTILE_CREEPS);
             if(targets.length) {
                 if(unit.attack(targets[0]) == ERR_NOT_IN_RANGE) {
@@ -206,41 +143,47 @@ module.exports.loop = function () {
             }
     	}
     	
-    	if(role == 'demo') {
-            var buildings = unit.room.find(FIND_HOSTILE_STRUCTURES);
-            if(buildings.length) {    
-                if(unit.attack(buildings[0]) ==  ERR_NOT_IN_RANGE) {
-                    unit.moveTo(buildings[0]);
-    	    
-                }    
-            }
-        }
-        
-        if(role == 'roadman') {
-            if(unit.carry.energy === 0) {
-                role = 'refill';
-            }
-            else {
-                if(unit.repair(roads) == ERR_NOT_IN_RANGE) {
-                    unit.moveTo(roads);
-                }
-            }
-        }
-		
-		if(role == 'scavenger') {
-			if(unit.carry.energy < unit.carryCapacity) {
-				var dropped = unit.pos.findClosestByRange(FIND_DROPPED_RESOURCES);
-				if(unit.pickup(dropped) == ERR_NOT_IN_RANGE) {
-					unit.moveTo(dropped);
+		if(unit.memory.role == 'refiller') {
+			if(unit.carry.energy === 0) {
+				if(unit.room.storage.transferEnergy(unit) == ERR_NOT_IN_RANGE) {
+					unit.moveTo(unit.room.storage);
 				}
 			}
-			else{
-				if(unit.transfer(Game.spawns.Spawn1, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-					unit.moveTo(Game.spawns.Spawn1);
+			else {
+				var Link = unit.pos.findClosestByRange(FIND_MY_STRUCTURES, {
+					filter: function(s) {
+						if(s.structureType == STRUCTURE_LINK) {
+							return true;
+						}
+						else {
+							return false;
+						}
+					}
+				});
+				if(Link.energy != Link.energyCapacity && Link !== null){
+					if(unit.transfer(Link, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+						unit.moveTo(Link);
+					}
+				}
+				else{
+					var toFill = unit.room.find(FIND_MY_STRUCTURES, {
+						filter: function(s) {
+							if(s.structureType == STRUCTURE_TOWER) {
+								return true;
+							}
+							else {
+								return false;
+							}
+						}
+					});
+					if(unit.transfer(toFill[1], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+						unit.moveTo(toFill[1]);
+					}
 				}
 			}
 		}
-        if(role == 'makerrefill') {
+		
+        if(unit.memory.role == 'makerrefill') {
             if(unit.carry.energy < unit.carryCapacity) {
 				if(unit.room.storage === null){
 					if(Game.spawns.Spawn1.energy >= 250) {
@@ -256,59 +199,106 @@ module.exports.loop = function () {
 				}
 			}
             else {
-                role = 'maker';
+                unit.memory.role = 'maker';
             }
         }
 		
-		if(role == 'controlrefill') {
+		if(unit.memory.role == 'controlrefill') {
             if(unit.carry.energy < unit.carryCapacity) {
-				if(unit.room.storage === null){
-					if(Game.spawns.Spawn1.energy >= 250) {
-						if(Game.spawns.Spawn1.transferEnergy(unit) == ERR_NOT_IN_RANGE) {
-							unit.moveTo(Game.spawns.Spawn1);				
+				var dstLink = Game.getObjectById(unit.room.memory.dstLinkId);
+				if(dstLink === null){
+					if(unit.room.storage === null){
+						if(Game.spawns.Spawn1.energy >= 250) {
+							if(Game.spawns.Spawn1.transferEnergy(unit) == ERR_NOT_IN_RANGE) {
+								unit.moveTo(Game.spawns.Spawn1);				
+							}
+						}
+					}
+					else {
+						if(unit.room.storage.transferEnergy(unit) == ERR_NOT_IN_RANGE) {
+							unit.moveTo(unit.room.storage, {reusePath: 30});
 						}
 					}
 				}
-				else {
-					if(unit.room.storage.transferEnergy(unit) == ERR_NOT_IN_RANGE) {
-						unit.moveTo(unit.room.storage);
+				else{
+					if(dstLink.transferEnergy(unit) == ERR_NOT_IN_RANGE) {
+						unit.moveTo(dstLink, {reusePath: 30});
 					}
 				}
 			}
             else {
-                role = 'control';
+                unit.memory.role = 'control';
             }
         }
     }
 	
 	console.log(JSON.stringify(pop));
 	
-	var spawn = Game.spawns.Spawn1;
-	
-	if (pop.miner < 2) {
-		if (spawn.canCreateCreep(body.miner) === 0) {
-			spawn.createCreep(body.miner, makeName('miner'), {role: 'miner'});
-			return;
-		}
-	}
-	if (pop.Carry < 2) {
-		if (spawn.canCreateCreep(body.Carry) === 0) {
-			spawn.createCreep(body.Carry, makeName('Carry'), {role: 'Carry'});
-			return;
-		}
-	}
-	if (pop.control < 1) {
-		if (spawn.canCreateCreep(body.control) === 0) {
-			spawn.createCreep(body.control, makeName('control'), {role: 'control'});
-			return;
-		}
-	}
-	if(construct !== null && construct.length > 0) {
-		if (pop.maker < 1) {
-			if (spawn.canCreateCreep(body.maker) === 0) {
-				spawn.createCreep(body.maker, makeName('maker'), {role: 'maker'});
+	for(var name in Game.rooms) {
+		var room = Game.rooms[name];
+		var spawns = room.find(FIND_MY_SPAWNS);
+		var evil = room.find(FIND_HOSTILE_CREEPS);
+		var wantRefillers = true;
+		var wantDismantlers = false;
+		
+		for (var name in spawns) {
+			
+			var spawn = spawns[name];
+		
+			if (pop.Carry < 2) {
+				if (spawn.canCreateCreep(body.Carry) === 0) {
+					spawn.createCreep(body.Carry, makeName('Carry'), {role: 'Carry'});
+					return;
+				}
+			}
+			if (evil.length) {
+				if (pop.guard < 2) {
+					if (spawn.canCreateCreep(body.guard) === 0) {
+						spawn.createCreep(body.guard, makeName('guard'), {role: 'guard'});
+						return;
+					}
+				}
+			}
+			if (pop.miner < 2) {
+				if (spawn.canCreateCreep(body.miner) === 0) {
+					spawn.createCreep(body.miner, makeName('miner'), {role: 'miner'});
+					return;
+				}
+			}
+			if (pop.control < 1) {
+				if (spawn.canCreateCreep(body.control) === 0) {
+					spawn.createCreep(body.control, makeName('control'), {role: 'control'});
+					return;
+				}
+			}
+			if(construct !== null && construct.length > 0) {
+				if (wantDismantlers === true) {
+					if (pop.remaker < 1) {
+						if (spawn.canCreateCreep(body.maker) === 0) {
+							spawn.createCreep(body.maker, makeName('remaker'), {role: 'remaker'});
+							return;
+						}
+					}
+				}
+				else {
+					if (pop.maker < 1) {
+						if (spawn.canCreateCreep(body.maker) === 0) {
+							spawn.createCreep(body.maker, makeName('maker'), {role: 'maker'});
+							return;
+						}
+					}
+				}
+			}
+			if(wantRefillers === true) {
+				if (pop.refiller < 1) {
+					if (spawn.canCreateCreep(body.refiller) === 0) {
+						spawn.createCreep(body.refiller, makeName('refiller'), {role: 'refiller'});
+						return;
+					}
+				}
 			}
 		}
 	}
 	Turret.run();
+	Links.run();
 };

@@ -22,7 +22,7 @@ function repair(room) {
 	
 	var wall = room.find(FIND_STRUCTURES, {
         filter: function(s) {
-			if(s.hits < 100000) {
+			if(s.hits < 2500000) {
 				//console.log('broken walls!');
 				if(s.structureType == STRUCTURE_WALL) {
 					//console.log('found a wall');
